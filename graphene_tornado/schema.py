@@ -27,5 +27,11 @@ class MutationRoot(ObjectType):
     def resolve_write_test(self, info):
         return QueryRoot()
 
+class SubscriptionRoot(ObjectType):
+    number = graphene.Int()
 
-schema = Schema(query=QueryRoot, mutation=MutationRoot)
+    def resolve_number(self, info):
+        return 42
+
+
+schema = Schema(query=QueryRoot, mutation=MutationRoot, subscription=SubscriptionRoot)

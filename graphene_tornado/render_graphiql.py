@@ -32,6 +32,10 @@ add "&raw" to the end of the URL within a browser.
   <script src="//cdn.jsdelivr.net/react/15.0.0/react.min.js"></script>
   <script src="//cdn.jsdelivr.net/react/15.0.0/react-dom.min.js"></script>
   <script src="//cdn.jsdelivr.net/graphiql/{{graphiql_version}}/graphiql.min.js"></script>
+  {% if enable_websockets %}
+    <script src="//unpkg.com/subscriptions-transport-ws@0.5.4/browser/client.js"></script>
+    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+  {% endif %}
 </head>
 <body>
   <script>
@@ -101,10 +105,18 @@ add "&raw" to the end of the URL within a browser.
     function updateURL() {
       history.replaceState(null, null, locationQuery(parameters));
     }
+    {% if enable_websockets %}
+      let subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient('{{ websocket_url }}', {
+        reconnect: true
+      });
+      let customFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+    {% else %}
+      let customFetcher = graphQLFetcher;
+    {% endif %}
     // Render <GraphiQL /> into the body.
     ReactDOM.render(
       React.createElement(GraphiQL, {
-        fetcher: graphQLFetcher,
+        fetcher: customFetcher,
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
         onEditOperationName: onEditOperationName,
@@ -187,7 +199,9 @@ def render_graphiql(query, variables, operation_name, result, graphiql_version=N
         result=result,
         query=query,
         variables=variables,
-        operation_name=operation_name
+        operation_name=operation_name,
+        enable_websockets=True,
+        websocket_url='ws://localhost:5000/subscriptions'
     )
 
     tmpl = jinja.from_string(template)
